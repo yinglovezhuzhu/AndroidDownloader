@@ -106,17 +106,15 @@ public class DownloadThread extends Thread {
 				conn.setRequestProperty("Connection", "Keep-Alive");
 				// Get the input stream of the connection.
 				InputStream inStream = conn.getInputStream();
-				// 设置本地数据缓存的大小
+				// Set local cache size
 				byte[] buffer = new byte[BUFFER_SIZE];
-				// 设置每次读取的数据量
 				int offset = 0;
 				// 打印该线程开始下载的位置
-				LogUtils.i(TAG, mThreadId + " starts to download from position " + startPos);
+				Log.i(TAG, mThreadId + " starts to download from position " + startPos);
 				RandomAccessFile threadFile = new RandomAccessFile(mSavedFile, "rwd");
-				// 文件指针指向开始下载的位置
+				// Make the pointer point to the position where start to download.
 				threadFile.seek(startPos);
-				// 但用户没有要求停止下载，同时没有到达请求数据的末尾时候会一直循环读取数据
-				// 直接把数据写到文件中
+                // The data is written to file until user stop download or data is finished download.
 				while (!mDownloader.isStoped() && (offset = inStream.read(buffer)) != -1) {
 					threadFile.write(buffer, 0, offset);
 					mDownloadedSize += offset;
