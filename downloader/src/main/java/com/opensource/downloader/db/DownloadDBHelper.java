@@ -53,13 +53,11 @@ public class DownloadDBHelper extends SQLiteOpenHelper {
 	}
 	
 	public static SQLiteDatabase getReadableDatabase(Context context) {
-//		return getInstance(context).getReadableDatabase();
 		return new DownloadDBHelper(context).getReadableDatabase();
 	}
 	
 	public static SQLiteDatabase getWriteableDatabase(Context context) {
 		return new DownloadDBHelper(context).getWritableDatabase();
-//		return getInstance(context).getWritableDatabase();
 	}
 
 	/* (non-Javadoc)

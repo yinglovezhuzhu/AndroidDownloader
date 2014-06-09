@@ -25,7 +25,6 @@ import android.content.Context;
 
 import com.opensource.downloader.db.utils.DownloadLogDBUtils;
 import com.opensource.downloader.utils.LogUtils;
-import com.opensource.downloader.utils.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -330,7 +329,7 @@ public class Downloader {
 	private String getFileName(HttpURLConnection conn) {
 		String filename = mUrl.substring(mUrl.lastIndexOf("/") + 1);
 
-		if (StringUtils.isEmpty(filename)) {// 如果获取不到文件名称
+		if (null == filename || filename.length() < 1) {// 如果获取不到文件名称
 			for (int i = 0;; i++) { // 循环遍历所有头属性
 				String mine = conn.getHeaderField(i); // 从返回的流中获取特定索引的头字段值
 				if (mine == null)

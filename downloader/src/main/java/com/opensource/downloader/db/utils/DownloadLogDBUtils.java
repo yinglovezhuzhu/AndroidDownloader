@@ -41,6 +41,10 @@ import java.util.Map;
 public class DownloadLogDBUtils {
 	
 	private static final String TABLE_NAME = "download_log";
+
+    private static final String URL = "url";
+    private static final String THREAD_ID = "thread_id";
+    private static final String DOWNLOADED_SIZE = "downloaded_size";
 	
 	/**
 	 * 保存日志，把某个URL下载的所有线程的下载信息存入表中
@@ -58,9 +62,9 @@ public class DownloadLogDBUtils {
 			for (Map.Entry<Integer, Integer> entry : log.entrySet()) {
 				// 插入特定下载路径特定线程ID已经下载的数据
 				values.clear();
-				values.put("url", url);
-				values.put("thread_id", entry.getKey());
-				values.put("downloaded_size", entry.getValue());
+				values.put(URL, url);
+				values.put(THREAD_ID, entry.getKey());
+				values.put(DOWNLOADED_SIZE, entry.getValue());
 				db.insert(TABLE_NAME, "", values);
 				count++;
 			}
@@ -86,7 +90,7 @@ public class DownloadLogDBUtils {
 		int count = 0;
 		try {
 			db.beginTransaction();
-			count = db.delete(TABLE_NAME, "url = ?", new String [] {url, });
+			count = db.delete(TABLE_NAME, URL + " = ?", new String [] {url, });
 			db.setTransactionSuccessful();
 		} finally {
 			db.endTransaction();
@@ -105,13 +109,14 @@ public class DownloadLogDBUtils {
 	public static Map<Integer, Integer> getLogByUrl(Context context, String url) {
 		SQLiteDatabase db = DownloadDBHelper.getReadableDatabase(context);
 		// 根据下载路径查询所有线程下载数据，返回的Cursor指向第一条记录之前
-		Cursor cursor = db.query(TABLE_NAME, null, "url = ?", new String [] {url, }, null, null, null);
+		Cursor cursor = db.query(TABLE_NAME, null, URL + " = ?",
+                new String [] {url, }, null, null, null);
 		// 建立一个哈希表用于存放每条线程的已经下载的文件长度
 		Map<Integer, Integer> data = new HashMap<Integer, Integer>();
 		if(cursor != null) {
 			if(cursor.moveToFirst()) {
-				int idIndex = cursor.getColumnIndex("thread_id");
-				int sizeIndex = cursor.getColumnIndex("downloaded_size");
+				int idIndex = cursor.getColumnIndex(THREAD_ID);
+				int sizeIndex = cursor.getColumnIndex(DOWNLOADED_SIZE);
 				// 从第一条记录开始开始遍历Cursor对象
 				do {
 					// 把线程id和该线程已下载的长度设置进data哈希表中
@@ -137,8 +142,9 @@ public class DownloadLogDBUtils {
 		try {
 			db.beginTransaction();
 			ContentValues values = new ContentValues();
-			values.put("downloaded_size", downloadedSize);
-			count = db.update(TABLE_NAME, values, "url = ? AND thread_id = ?", new String [] {url, String.valueOf(threadId), });
+			values.put(DOWNLOADED_SIZE, downloadedSize);
+			count = db.update(TABLE_NAME, values, URL + " = ? AND " + THREAD_ID + " = ?",
+                    new String [] {url, String.valueOf(threadId), });
 			db.setTransactionSuccessful();
 		} finally {
 			db.endTransaction();

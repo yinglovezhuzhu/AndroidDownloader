@@ -22,16 +22,16 @@
 package com.opensource.downloader;
 
 /**
- * 功能：下载进度监听器
- * @author xiaoying
+ * Usage The listener to listen download state.
+ * @author yinglovezhuzhu@gmail.com
  *
  */
 public interface DownloadListener {
 	
 	/**
-	 * 下载进度回调
-	 * @param totalSize 总大小
-	 * @param downloadedSize 已下载大小
+	 * The callback to listen download size
+	 * @param totalSize total size of downloading file.
+	 * @param downloadedSize  downloaded size.
 	 */
 	public void onDownloadSize(int totalSize, int downloadedSize);
 }

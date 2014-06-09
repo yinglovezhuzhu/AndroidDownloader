@@ -21,6 +21,8 @@
 
 package com.opensource.downloader;
 
+import android.util.Log;
+
 import com.opensource.downloader.utils.LogUtils;
 
 import java.io.File;
@@ -31,8 +33,8 @@ import java.net.URL;
 
 
 /**
- * 功能：下载线程类
- * @author xiaoying
+ * Usage The download thread.
+ * @author yinglovezhuzhu@gmail.com
  *
  */
 public class DownloadThread extends Thread {
@@ -53,12 +55,12 @@ public class DownloadThread extends Thread {
 	/**
 	 * 构造方法
 	 * 
-	 * @param downloader 文件下载的FileDownloader对象
-	 * @param downUrl 所下载文件的Url
-	 * @param saveFile 将文件保存的路径
-	 * @param block 给该线程分配的下载的长度
-	 * @param downloadedLength 该线程正在的下载的长度 if(downloadLength<block) 说明未下载完成 else 下载完成
-	 * @param threadId 该线程的ID标识
+	 * @param downloader Downloader instance.
+	 * @param downUrl The url of downloading file
+	 * @param saveFile The local file that to save the downloading file.
+	 * @param block The block size that this thread need to download.
+	 * @param downloadedLength The length this thread finish download, if(downloadLength<block) means this thread are not finished.
+	 * @param threadId The id of this thread.
 	 */
 	public DownloadThread(Downloader downloader, URL downUrl, File saveFile, int block, int downloadedLength, int threadId) {
 		this.mUrl = downUrl;
@@ -71,22 +73,23 @@ public class DownloadThread extends Thread {
 
 	@Override
 	public void run() {
-		if (mDownloadedSize < mBlockSize) {// 如果该条线程为下载完成
+		if (mDownloadedSize < mBlockSize) {// If this thread are not finished.
 			try {
 				HttpURLConnection conn = (HttpURLConnection) mUrl.openConnection();
 				conn.setConnectTimeout(5 * 1000);
 				conn.setRequestMethod("GET");
-				conn.setRequestProperty("Accept", "*/*"); // 设置客户端可以接受的返回数据类型
+				conn.setRequestProperty("Accept", "*/*"); // accept all MIME-TYPE
 				conn.setRequestProperty("Accept-Language", "zh-CN");
-				conn.setRequestProperty("Referer", mUrl.toString());// 设置请求的来源，便于对访问来源进行统计
+				conn.setRequestProperty("Referer", mUrl.toString());
 				conn.setRequestProperty("Charset", "UTF-8");
 
-				// 计算该线程下载的开始位置
+				// Get the position of this thread start to download.
 				int startPos = mBlockSize * (mThreadId - 1) + mDownloadedSize;
-				// 计算该线程下载的结束位置
+				// Get the position of this thread end to download.
 				int endPos = mBlockSize * mThreadId - 1;
 
-				// 设置获取实体数据的范围,如果超过了实体数据的大小会自动返回实际的数据大小
+                //Setting the rage of the data, it will return exact realistic size automatically,
+                // if the size set to be is lager then realistic size.
 				conn.setRequestProperty("Range", "bytes=" + startPos + "-" + endPos);
 
 				// 客户端用户代理
@@ -99,9 +102,9 @@ public class DownloadThread extends Thread {
 								+ " .NET CLR 3.0.4506.2152;"
 								+ " .NET CLR 3.5.30729)");
 
-				// 使用长连接
+				// Use long connection.
 				conn.setRequestProperty("Connection", "Keep-Alive");
-				// 获取远程连接的输入流
+				// Get the input stream of the connection.
 				InputStream inStream = conn.getInputStream();
 				// 设置本地数据缓存的大小
 				byte[] buffer = new byte[BUFFER_SIZE];
@@ -126,9 +129,9 @@ public class DownloadThread extends Thread {
 				inStream.close();
 
 				if (mDownloader.isStoped()) {
-					LogUtils.i(TAG, "Download thread " + mThreadId + " has been paused");
+					Log.i(TAG, "Download thread " + mThreadId + " has been paused");
 				} else {
-					LogUtils.i(TAG, "Download thread " + mThreadId + " has been finished");
+					Log.i(TAG, "Download thread " + mThreadId + " has been finished");
 				}
 				this.mIsFinished = true; // 设置完成标志为true，无论是下载完成还是用户主动中断下载
 			} catch (Exception e) {
