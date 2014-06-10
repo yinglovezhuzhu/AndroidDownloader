@@ -274,7 +274,7 @@ public class Downloader {
 		conn.setRequestProperty("Accept-Language", "zh-CN");
 		conn.setRequestProperty("Referer", downloadUrl);
 		conn.setRequestProperty("Charset", "UTF-8");
-		// 设置用户代理
+		// Set agent.
 		conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; "
 				+ "MSIE 8.0; Windows NT 5.2;"
 				+ " Trident/4.0; .NET CLR 1.1.4322;"
@@ -287,7 +287,7 @@ public class Downloader {
 	}
 	
 	/**
-	 * 检查下载目录，如果目录不存在，创建目录
+	 * Check the download folder, make new folder if it is not exist.
 	 * @param folder
 	 */
 	private void checkDownloadFolder(File folder) {
