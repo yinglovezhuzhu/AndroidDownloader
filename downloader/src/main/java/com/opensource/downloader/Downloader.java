@@ -357,13 +357,13 @@ public class Downloader {
 	 * @return HTTp response header field map.
 	 */
 	private static Map<String, String> getHttpResponseHeader(HttpURLConnection http) {
-		Map<String, String> header = new LinkedHashMap<String, String>(); // 使用LinkedHashMap保证写入和遍历的时候的顺序相同，而且允许空值存在
-		for (int i = 0;; i++) { // 此处为无限循环，因为不知道头字段的数量
-			String fieldValue = http.getHeaderField(i); // getHeaderField(int n)用于返回 第n个头字段的值。
+		Map<String, String> header = new LinkedHashMap<String, String>();
+		for (int i = 0;; i++) {
+			String fieldValue = http.getHeaderField(i);
 			if (fieldValue == null) {
-				break; // 如果第i个字段没有值了，则表明头字段部分已经循环完毕，此处使用Break退出循环
+				break;
 			}
-			header.put(http.getHeaderFieldKey(i), fieldValue); // getHeaderFieldKey(int n)用于返回第n个头字段的键。
+			header.put(http.getHeaderFieldKey(i), fieldValue);
 		}
 		return header;
 	}
