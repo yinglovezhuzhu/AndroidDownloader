@@ -12,7 +12,7 @@ import android.widget.Toast;
 
 import com.opensource.downloader.DownloadListener;
 import com.opensource.downloader.Downloader;
-import com.opensource.downloader.utils.LogUtils;
+import com.opensource.downloader.utils.LogUtil;
 
 import java.io.File;
 
@@ -126,7 +126,7 @@ public class MainActivity extends Activity {
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
             if(result != null) {
-                LogUtils.i("SUCCESS", "下载成功");
+                LogUtil.i("SUCCESS", "下载成功");
                 Toast.makeText(MainActivity.this, "下载成功", Toast.LENGTH_SHORT).show();
                 mPb.setProgress(0);
                 mBtn.setText(R.string.start);

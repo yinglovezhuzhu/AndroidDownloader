@@ -20,6 +20,10 @@
 
 package com.opensource.downloader.utils;
 
+import android.os.Handler;
+import android.os.Message;
+import android.os.Process;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -30,10 +34,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import android.os.Handler;
-import android.os.Message;
-import android.os.Process;
 
 /**
  * <p>AsyncDBTask enables proper and easy use of the UI thread. This class allows to
@@ -177,7 +177,7 @@ public abstract class AsyncDBTask<Params, Progress, Result> {
          */
         RUNNING,
         /**
-         * Indicates that {@link AsyncTaskEx#onPostExecute} has finished.
+         * Indicates that {@link com.opensource.downloader.utils.AsyncDBTask#onPostExecute} has finished.
          */
         FINISHED,
     }

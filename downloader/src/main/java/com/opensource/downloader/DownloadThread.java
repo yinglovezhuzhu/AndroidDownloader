@@ -21,9 +21,8 @@
 
 package com.opensource.downloader;
 
-import android.util.Log;
 
-import com.opensource.downloader.utils.LogUtils;
+import com.opensource.downloader.utils.LogUtil;
 
 import java.io.File;
 import java.io.InputStream;
@@ -109,8 +108,7 @@ public class DownloadThread extends Thread {
 				// Set local cache size
 				byte[] buffer = new byte[BUFFER_SIZE];
 				int offset = 0;
-				// 打印该线程开始下载的位置
-				Log.i(TAG, mThreadId + " starts to download from position " + startPos);
+				LogUtil.i(TAG, mThreadId + " starts to download from position " + startPos);
 				RandomAccessFile threadFile = new RandomAccessFile(mSavedFile, "rwd");
 				// Make the pointer point to the position where start to download.
 				threadFile.seek(startPos);
@@ -118,41 +116,41 @@ public class DownloadThread extends Thread {
 				while (!mDownloader.isStoped() && (offset = inStream.read(buffer)) != -1) {
 					threadFile.write(buffer, 0, offset);
 					mDownloadedSize += offset;
-					// 把该线程已经下载的数据长度更新到数据库和内存哈希表中
+					// Update the range of this thread to database.
 					mDownloader.update(mThreadId, mDownloadedSize);
-					// 把新下载的数据长度加入到已经下载的数据总长度中
+					// Update the size of downloaded.
 					mDownloader.append(offset);
 				}
 				threadFile.close();
 				inStream.close();
 
 				if (mDownloader.isStoped()) {
-					Log.i(TAG, "Download thread " + mThreadId + " has been paused");
+					LogUtil.i(TAG, "Download thread " + mThreadId + " has been paused");
 				} else {
-					Log.i(TAG, "Download thread " + mThreadId + " has been finished");
+					LogUtil.i(TAG, "Download thread " + mThreadId + " has been finished");
 				}
 				this.mIsFinished = true; // 设置完成标志为true，无论是下载完成还是用户主动中断下载
 			} catch (Exception e) {
-				// 设置该线程已经下载的长度为-1
+				// Set downloaded size to -1.
 				this.mDownloadedSize = -1;
-				LogUtils.e(TAG, "Thread " + mThreadId + ":" + e);
+				LogUtil.e(TAG, "Thread " + mThreadId + ":" + e);
 			}
 		}
 	}
 
 	/**
-	 * 下载是否完成
+	 * Get the download state,finished or not.
 	 * 
-	 * @return true or false
+	 * @return true if this thread is finished.
 	 */
 	public boolean isFinished() {
 		return mIsFinished;
 	}
 
 	/**
-	 * 已经下载的内容大小
+	 * Get the size of downloaded.
 	 * 
-	 * @return 如果返回值为-1,代表下载失败
+	 * @return The size of downloaded,return -1 when this thread download failed
 	 */
 	public long getDownloadedLength() {
 		return mDownloadedSize;

@@ -25,7 +25,7 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.opensource.downloader.utils.LogUtils;
+import com.opensource.downloader.utils.LogUtil;
 
 
 /**
@@ -77,7 +77,7 @@ public class DownloadDBHelper extends SQLiteOpenHelper {
 	@Override
 	public void onOpen(SQLiteDatabase db) {
 		super.onOpen(db);
-		LogUtils.d("DonwloadDBHelper", "Database has opened ++++++++++++++++>>>>>>>>>>>>");
+		LogUtil.d("DonwloadDBHelper", "Database has opened ++++++++++++++++>>>>>>>>>>>>");
 	}
 
 	/* (non-Javadoc)

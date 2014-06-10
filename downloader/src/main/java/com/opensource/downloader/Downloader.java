@@ -24,7 +24,7 @@ package com.opensource.downloader;
 import android.content.Context;
 
 import com.opensource.downloader.db.utils.DownloadLogDBUtils;
-import com.opensource.downloader.utils.LogUtils;
+import com.opensource.downloader.utils.LogUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,8 +42,8 @@ import java.util.regex.Pattern;
 
 
 /**
- * 功能：下载器类
- * @author xiaoying
+ * usage Downloader class
+ * @author yinglovezhuzhu@gmail.com
  *
  */
 public class Downloader {
@@ -54,25 +54,24 @@ public class Downloader {
 	
 	private static final int RESPONSE_OK = 200;
 	private Context mContext;
-	private boolean isStoped; // 停止下载标志
-	private int mDownloadedSize = 0; // 已下载文件长度
-	private int mFileSize = 0; // 原始文件长度
-	private DownloadThread [] mTheadPool; // 根据线程数设置下载线程池
-	private File mSavedFile; // 数据保存到的本地文件
+	private boolean isStoped; // The flag of stopped.
+	private int mDownloadedSize = 0; // The size of downloaded.
+	private int mFileSize = 0; // The size of the file which to download.
+	private DownloadThread [] mTheadPool; // The thread pool of download thread.
+	private File mSavedFile; // The local file.
 	private long mUpdateTime = 1000;
-	// 缓存各线程下载的长度
-	private Map<Integer, Integer> mData = new ConcurrentHashMap<Integer, Integer>();
-	private int mBlockSize; // 每条线程下载的长度
-	private String mUrl; // 下载路径
+	private Map<Integer, Integer> mData = new ConcurrentHashMap<Integer, Integer>(); // The data of all thread state
+	private int mBlockSize; // The block size of each thread need to download
+	private String mUrl; // The url of the file which to download.
 	
 	private boolean mIsFinished = false;
 
 	/**
-	 * 构建文件下载器
+	 * Constructor
 	 * 
-	 * @param downloadUrl 下载路径
-	 * @param saveFolder 文件保存目录
-	 * @param threadNum 下载线程数
+	 * @param downloadUrl The url of the file which to download.
+	 * @param saveFolder The local save folder.
+	 * @param threadNum The amount of thread to download a file.
 	 */
 	public Downloader(Context context, String downloadUrl, File saveFolder, int threadNum) {
 		try {
@@ -86,111 +85,116 @@ public class Downloader {
 			
 			if (conn.getResponseCode() == RESPONSE_OK) {
 				mFileSize = conn.getContentLength();
-				// 当文件大小为小于等于零时抛出运行时异常
+				// Throw a RuntimeException when got file size failed.
 				if (mFileSize <= 0) {
 					throw new RuntimeException("Can't get file size ");
 				}
 				
 				String filename = getFileName(conn);
-				// 根据文件保存目录和文件名构建保存文件
+				// Create local file object according to local saved folder and local file name.
 				mSavedFile = new File(saveFolder, filename);
-				Map<Integer, Integer> logdata = DownloadLogDBUtils.getLogByUrl(mContext, downloadUrl);
+				Map<Integer, Integer> logData = DownloadLogDBUtils.getLogByUrl(mContext, downloadUrl);
 
-				// 如果存在下载记录
-				if (logdata.size() > 0) {
-					for (Map.Entry<Integer, Integer> entry : logdata.entrySet()) {
-						// 把各条线程已经下载的数据长度放入data中
+				if (logData.size() > 0) {
+					for (Map.Entry<Integer, Integer> entry : logData.entrySet()) {
 						mData.put(entry.getKey(), entry.getValue());
 					}
 				}
 
-				// 如果已经下载的数据的线程数和现在设置的线程数相同时则计算所有线程已经下载的数据总长度
+				// If the number of threads that have been downloaded data and the number
+				// of threads is the same now set all the threads have calculated
+				// the total length of the downloaded data
 				mDownloadedSize = getDownloadedSize();
-				// 计算每条线程下载的数据长度
+				// Calculate the length of each thread need to download.
 				mBlockSize = getBlockSize(mFileSize, mTheadPool.length);
 			} else {
-				LogUtils.w(TAG, "服务器响应错误!响应码：" + conn.getResponseCode() + "响应消息：" + conn.getResponseMessage());
+				LogUtil.w(TAG, "Server response error! Response code：" + conn.getResponseCode()
+                        + "Response message：" + conn.getResponseMessage());
 				throw new RuntimeException("server response error ");
 			}
 		} catch (Exception e) {
-			LogUtils.e(TAG, e.toString());
+			LogUtil.e(TAG, e.toString());
 			throw new RuntimeException("Can't connection this url");
 		}
 	}
 	
 	/**
-	 * 开始下载文件
+	 * Download file
 	 * 
-	 * @param listener 监听下载数量的变化,如果不需要了解实时下载的数量,可以设置为null
-	 * @return 已下载文件大小
-	 * @throws Exception
+	 * @param listener The listener to listen download state, can be null if not need.
+	 * @return The size that downloaded.
+	 * @throws Exception The error happened when downloading.
 	 */
-	public int download(DownloadListener listener) throws Exception { // 进行下载，并抛出异常给调用者，如果有异常的话
-		File tempFile = new File(mSavedFile.getAbsolutePath() + TEMP_FILE_SUFFIX);//给正在下载的文件加上一个下载标志行的后缀，以免打开未完成下载的文件而出错
+	public int download(DownloadListener listener) throws Exception {
+        // Mark a downloading file name a suffix flag,
+        // so as not to open the unfinished download files and error
+		File tempFile = new File(mSavedFile.getAbsolutePath() + TEMP_FILE_SUFFIX);
 		try {
 			RandomAccessFile randOut = new RandomAccessFile(tempFile, "rwd");
 			if (mFileSize > 0) {
-				randOut.setLength(mFileSize); // 设置文件的大小
+				randOut.setLength(mFileSize); // Set total size of the download file.
 			}
-			randOut.close(); // 关闭该文件，使设置生效
+			randOut.close(); // Close the RandomAccessFile to make the settings effective
 			URL url = new URL(mUrl);
-			if (mData.size() != mTheadPool.length) { // 如果原先未曾下载或者原先的下载线程数与现在的线程数不一致
+			if (mData.size() != mTheadPool.length) { // The thread count in download log not equal to now.
 				mData.clear();
-				for (int i = 0; i < mTheadPool.length; i++) { // 遍历线程池
-					mData.put(i + 1, 0);// 初始化每条线程已经下载的数据长度为0
+				for (int i = 0; i < mTheadPool.length; i++) {
+					mData.put(i + 1, 0);// Init download state map
 				}
-				mDownloadedSize = 0; // 设置已经下载的长度为0
+				mDownloadedSize = 0; // Init downloaded size.
 			}
-			for (int i = 0; i < mTheadPool.length; i++) {// 开启线程进行下载
-				int downloadedLength = mData.get(i + 1); // 通过特定的线程ID获取该线程已经下载的数据长度
-				if (downloadedLength < mBlockSize && mDownloadedSize < mFileSize) {// 判断线程是否已经完成下载,否则继续下载
-					mTheadPool[i] = new DownloadThread(this, url, tempFile, mBlockSize, mData.get(i + 1), i + 1); // 初始化特定id的线程
-					mTheadPool[i].setPriority(7); // 设置线程的优先级，Thread.NORM_PRIORITY
-													// = 5 Thread.MIN_PRIORITY =
-													// 1 Thread.MAX_PRIORITY =
-													// 10
-					mTheadPool[i].start(); // 启动线程
+			for (int i = 0; i < mTheadPool.length; i++) {
+				int downloadedLength = mData.get(i + 1); // Get the size of downloaded from each thread.
+				if (downloadedLength < mBlockSize && mDownloadedSize < mFileSize) {// Go through when downloaded size less then total size.
+					mTheadPool[i] = new DownloadThread(this, url, tempFile, mBlockSize, mData.get(i + 1), i + 1); // Init the thread with the given id
+					mTheadPool[i].setPriority(7); // Set the priority of thread
+					                              // Thread.NORM_PRIORITY = 5
+					                              // Thread.MIN_PRIORITY = 1
+					                              // Thread.MAX_PRIORITY = 10
+					mTheadPool[i].start(); // Start thread
 					mIsFinished = false;
 				} else {
-					mTheadPool[i] = null; // 表明在线程已经完成下载任务
-					mIsFinished = true;
+					mTheadPool[i] = null; // The thread is finished
+//					mIsFinished = true;
 				}
 			}
-			DownloadLogDBUtils.delete(mContext, mUrl); // 如果存在下载记录，删除它们，然后重新添加
-			DownloadLogDBUtils.save(mContext, mUrl, mData); // 把已经下载的实时数据写入数据库
+			DownloadLogDBUtils.delete(mContext, mUrl); // delete all download log
+			DownloadLogDBUtils.save(mContext, mUrl, mData); // add new download log
 
-			boolean isDownloading = true;// 下载未完成
-			while (isDownloading) {// 循环判断所有线程是否完成下载
-				Thread.sleep(mUpdateTime);
-				isDownloading = false;// 假定全部线程下载完成
-				for (int i = 0; i < mTheadPool.length; i++) {
-					if (mTheadPool[i] != null && !mTheadPool[i].isFinished()) {// 如果发现线程未完成下载
-						isDownloading = true;// 设置标志为下载没有完成
-						if (mTheadPool[i].getDownloadedLength() == -1) {// 如果下载失败,再重新在已经下载的数据长度的基础上下载
-							mTheadPool[i] = new DownloadThread(this, url, tempFile, mBlockSize, mData.get(i + 1), i + 1); // 重新开辟下载线程
-							mTheadPool[i].setPriority(7); // 设置下载的优先级
-							mTheadPool[i].start(); // 开始下载线程
-						}
-					}
-				}
-				mIsFinished = true;
-				if (listener != null)
-					listener.onDownloadSize(mFileSize, mDownloadedSize);// 通知目前已经下载完成的数据长度
-			}
+            boolean isDownloading = false;
+            do {
+                Thread.sleep(mUpdateTime);
+                for (int i = 0; i < mTheadPool.length; i++) {
+                    if (mTheadPool[i] != null && !mTheadPool[i].isFinished()) {// If has some thread not finished.
+                        isDownloading = true;// Set is download state not finished.
+                        mIsFinished = false;
+                        if (mTheadPool[i].getDownloadedLength() == -1) {
+                            mTheadPool[i] = new DownloadThread(this, url, tempFile, mBlockSize, mData.get(i + 1), i + 1); // 重新开辟下载线程
+                            mTheadPool[i].setPriority(7);
+                            mTheadPool[i].start();
+                        }
+                    }
+                }
+                if (listener != null) {
+                    listener.onDownloadSize(mFileSize, mDownloadedSize);// download state call back
+                                                                        // return then download size and downloaded size.
+                }
+            } while(isDownloading);
 			if (mDownloadedSize == mFileSize) {
 				tempFile.renameTo(mSavedFile);
-				DownloadLogDBUtils.delete(mContext, mUrl);// 下载完成删除记录
+				DownloadLogDBUtils.delete(mContext, mUrl);// Delete download log when finished download
+				mIsFinished = true;
 			}
 		} catch (Exception e) {
-			LogUtils.e(TAG, e.toString());// 打印错误
-			throw new Exception("File downloads error"); // 抛出文件下载异常
+			LogUtil.e(TAG, e.toString());// 打印错误
+			throw new Exception("File downloads error"); // Throw exception when some error happened when downloading.
 		}
 		return mDownloadedSize;
 	}
 
 
 	/**
-	 * 是否下载完成
+	 * Get download state is finished or not.
 	 * @return
 	 */
 	public boolean isFinished() {
@@ -198,21 +202,21 @@ public class Downloader {
 	}
 
 	/**
-	 * 获取线程数
+	 * Get download thread count.
 	 */
 	public int getThreadNum() {
 		return mTheadPool.length;
 	}
 
 	/**
-	 * 停止下载
+	 * Stop the download
 	 */
 	public void stop() {
 		this.isStoped = true;
 	}
 
 	/**
-	 * 是否停止下载
+	 * Get download state is stopped or not.
 	 * @return
 	 */
 	public boolean isStoped() {
@@ -220,7 +224,7 @@ public class Downloader {
 	}
 
 	/**
-	 * 获取文件大小
+	 * Get total file size
 	 * 
 	 * @return
 	 */
@@ -229,7 +233,7 @@ public class Downloader {
 	}
 
 	/**
-	 * 设置更新频率
+	 * Set update frequency
 	 * @param updateTime
 	 */
 	public void setUpdateTime(long updateTime) {
@@ -237,29 +241,29 @@ public class Downloader {
 	}
 	
 	/**
-	 * 累计已下载大小
+	 * Update downloaded size.
 	 * 
 	 * @param size
 	 */
-	protected synchronized void append(int size) { // 使用同步关键字解决并发访问问题
-		mDownloadedSize += size; // 把实时下载的长度加入到总下载长度中
+	protected synchronized void append(int size) {
+		mDownloadedSize += size;
 	}
 
 	/**
-	 * 更新指定线程最后下载的位置
+	 * Update the download state by thread id.
 	 * 
-	 * @param threadId 线程id
-	 * @param pos 最后下载的位置
+	 * @param threadId thread id
+	 * @param pos The last position downloaded.
 	 */
 	protected synchronized void update(int threadId, int pos) {
-		mData.put(threadId, pos); // 把制定线程ID的线程赋予最新的下载长度，以前的值会被覆盖掉
-		DownloadLogDBUtils.update(mContext, mUrl, threadId, pos); // 更新数据库中指定线程的下载长度
+		mData.put(threadId, pos); // Update map data.
+		DownloadLogDBUtils.update(mContext, mUrl, threadId, pos); // Update database data.
 	}
 
 	/**
-	 *根据URL获取一个HttpConnection
-	 * @param downloadUrl
-	 * @return
+	 * Get HttpConnection object
+	 * @param downloadUrl the url to download.
+	 * @return HttpConnection object
 	 */
 	private HttpURLConnection getConnection(String downloadUrl) throws IOException {
 		URL url = new URL(downloadUrl);
@@ -278,7 +282,7 @@ public class Downloader {
 				+ " .NET CLR 3.0.4506.2152; " + ".NET CLR 3.5.30729)");
 		conn.setRequestProperty("Connection", "Keep-Alive");
 		conn.connect();
-		LogUtils.i(TAG, getResponseHeader(conn));
+		LogUtil.i(TAG, getResponseHeader(conn));
 		return conn;
 	}
 	
@@ -293,9 +297,9 @@ public class Downloader {
 	}
 	
 	/**
-	 * 计算分块大小
-	 * @param fileSize
-	 * @param blockNum
+	 * Get the block size.
+	 * @param fileSize The size of the file which to download.
+	 * @param blockNum The amount of block.
 	 * @return
 	 */
 	private int getBlockSize(int fileSize, int blockNum) {
@@ -304,53 +308,53 @@ public class Downloader {
 	}
 	
 	/**
-	 * 计算已下载的大小
+     * Get downloaded size.
 	 * @return
 	 */
 	private int getDownloadedSize() {
 		int size = 0;
 		if (mData.size() == mTheadPool.length) {
-			// 遍历每条线程已经下载的数据
 			Set<Integer> keys = mData.keySet();
 			for (Integer key : keys) {
 				size += mData.get(key);
 			}
-			// 打印出已经下载的数据总和
-			LogUtils.i(TAG, "已经下载的长度" + size + "个字节");
+			LogUtil.i(TAG, "Downloaded size " + size + " bytes");
 		}
 		return size;
 	}
 
 	/**
-	 * 从链接中获取文件名
-	 * @param conn
+	 * Get file name
+	 * @param conn HttpConnection object
 	 * @return
 	 */
 	private String getFileName(HttpURLConnection conn) {
 		String filename = mUrl.substring(mUrl.lastIndexOf("/") + 1);
 
-		if (null == filename || filename.length() < 1) {// 如果获取不到文件名称
-			for (int i = 0;; i++) { // 循环遍历所有头属性
-				String mine = conn.getHeaderField(i); // 从返回的流中获取特定索引的头字段值
+		if (null == filename || filename.length() < 1) {// Get file name failed.
+			for (int i = 0;; i++) { // Get file name from http header.
+				String mine = conn.getHeaderField(i);
 				if (mine == null)
-					break; // 如果遍历到了返回头末尾这退出循环
-				if ("content-disposition".equals(conn.getHeaderFieldKey(i).toLowerCase(Locale.ENGLISH))) { // 获取content-disposition返回头字段，里面可能会包含文件名
-					Matcher m = Pattern.compile(".*filename=(.*)").matcher(mine.toLowerCase(Locale.ENGLISH)); // 使用正则表达式查询文件名
+					break; // Exit the loop when go through all http header.
+				if ("content-disposition".equals(conn.getHeaderFieldKey(i).toLowerCase(Locale.ENGLISH))) { // Get content-disposition header field returns, which may contain a file name
+					Matcher m = Pattern.compile(".*filename=(.*)").matcher(mine.toLowerCase(Locale.ENGLISH)); // Using regular expressions query file name
 					if (m.find()) {
-						return m.group(1); // 如果有符合正则表达规则的字符串
+						return m.group(1); // If there is compliance with the rules of the regular expression string
 					}
 				}
 			}
-			filename = UUID.randomUUID() + ".tmp";// 由网卡上的标识数字(每个网卡都有唯一的标识号)以及CPU 时钟的唯一数字生成的的一个 16字节的二进制作为文件名
+			filename = UUID.randomUUID() + ".tmp";// A 16-byte binary digits generated by a unique identification number
+			                                      // (each card has a unique identification number)
+			                                      // on the card and the CPU clock as the file name
 		}
 		return filename;
 	}
 
 	/**
-	 * 获取HTTP响应头字段
+	 * Get HTTP response header field
 	 * 
-	 * @param http HttpURLConnection对象
-	 * @return 返回头字段的LinkedHashMap
+	 * @param http HttpURLConnection object
+	 * @return HTTp response header field map.
 	 */
 	private static Map<String, String> getHttpResponseHeader(HttpURLConnection http) {
 		Map<String, String> header = new LinkedHashMap<String, String>(); // 使用LinkedHashMap保证写入和遍历的时候的顺序相同，而且允许空值存在
@@ -365,8 +369,9 @@ public class Downloader {
 	}
 
 	/**
-	 * 打印HTTP头字段
-	 * @param conn HttpURLConnection对象
+	 * Get HTTP response header field as a string
+	 * @param conn HttpURLConnection object
+     * @return HTTP response header field as a string
 	 */
 	private static String getResponseHeader(HttpURLConnection conn) {
 		Map<String, String> header = getHttpResponseHeader(conn);

@@ -13,14 +13,16 @@ package com.opensource.downloader.utils;
 
 import android.util.Log;
 
+import com.opensource.downloader.BuildConfig;
+
 /**
- * 功能：日志打印工具类
- * @author xiaoying
+ * usage Log print util
+ * @author yinglovezhuzhu@gmail.com
  *
  */
-public class LogUtils {
+public class LogUtil {
 
-	private final static boolean isPrint = true;
+	private final static boolean isPrint = BuildConfig.DEBUG;
 	
 	public static void i(String tag, String msg) {
 		if(isPrint) {

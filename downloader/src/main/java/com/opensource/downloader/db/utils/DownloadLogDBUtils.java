@@ -34,8 +34,8 @@ import java.util.Map;
 
 
 /**
- * 功能：下载日志数据库操作工具类
- * @author xiaoying
+ * usage Download log database util
+ * @author yinglovezhuzhu@gmail.com
  *
  */
 public class DownloadLogDBUtils {
@@ -47,7 +47,7 @@ public class DownloadLogDBUtils {
     private static final String DOWNLOADED_SIZE = "downloaded_size";
 	
 	/**
-	 * 保存日志，把某个URL下载的所有线程的下载信息存入表中
+	 * Save the log of a file.
 	 * @param context
 	 * @param url
 	 * @param log
@@ -80,7 +80,7 @@ public class DownloadLogDBUtils {
 	}
 	
 	/**
-	 * 根据下载URL清除下载日志（下载完成后）
+	 * Delete the log by url
 	 * @param context
 	 * @param url
 	 * @return
@@ -100,7 +100,7 @@ public class DownloadLogDBUtils {
 	}
 	
 	/**
-	 * 根据URL查询该URL下载的日志
+	 * Get the log by url.
 	 * @param context
 	 * @param url
 	 * @return
@@ -108,18 +108,14 @@ public class DownloadLogDBUtils {
 	@SuppressLint("UseSparseArrays")
 	public static Map<Integer, Integer> getLogByUrl(Context context, String url) {
 		SQLiteDatabase db = DownloadDBHelper.getReadableDatabase(context);
-		// 根据下载路径查询所有线程下载数据，返回的Cursor指向第一条记录之前
 		Cursor cursor = db.query(TABLE_NAME, null, URL + " = ?",
                 new String [] {url, }, null, null, null);
-		// 建立一个哈希表用于存放每条线程的已经下载的文件长度
 		Map<Integer, Integer> data = new HashMap<Integer, Integer>();
 		if(cursor != null) {
 			if(cursor.moveToFirst()) {
 				int idIndex = cursor.getColumnIndex(THREAD_ID);
 				int sizeIndex = cursor.getColumnIndex(DOWNLOADED_SIZE);
-				// 从第一条记录开始开始遍历Cursor对象
 				do {
-					// 把线程id和该线程已下载的长度设置进data哈希表中
 					data.put(cursor.getInt(idIndex), cursor.getInt(sizeIndex));
 				} while(cursor.moveToNext());
 			}
@@ -130,7 +126,7 @@ public class DownloadLogDBUtils {
 	}
 	
 	/**
-	 * 根据下载URL和线程ID更新一条下载日志
+	 * Update a log record through thread id and url
 	 * @param context
 	 * @param url
 	 * @param threadId
