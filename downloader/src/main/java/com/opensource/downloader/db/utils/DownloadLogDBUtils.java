@@ -45,6 +45,7 @@ public class DownloadLogDBUtils {
     private static final String URL = "url";
     private static final String THREAD_ID = "thread_id";
     private static final String DOWNLOADED_SIZE = "downloaded_size";
+    private static final String FILE = "file";
 	
 	/**
 	 * Save the log of a file.
@@ -53,7 +54,7 @@ public class DownloadLogDBUtils {
 	 * @param log
 	 * @return
 	 */
-	public static int save(Context context, String url, Map<Integer, Integer> log) {
+	public static int save(Context context, String url, String file, Map<Integer, Integer> log) {
 		SQLiteDatabase db = DownloadDBHelper.getWriteableDatabase(context);
 		int count = 0;
 		db.beginTransaction();
@@ -65,6 +66,7 @@ public class DownloadLogDBUtils {
 				values.put(URL, url);
 				values.put(THREAD_ID, entry.getKey());
 				values.put(DOWNLOADED_SIZE, entry.getValue());
+                values.put(FILE, file);
 				db.insert(TABLE_NAME, "", values);
 				count++;
 			}
@@ -132,13 +134,14 @@ public class DownloadLogDBUtils {
 	 * @param threadId
 	 * @param downloadedSize
 	 */
-	public static int update(Context context, String url, int threadId, int downloadedSize) {
+	public static int update(Context context, String url, String file, int threadId, int downloadedSize) {
 		SQLiteDatabase db = DownloadDBHelper.getWriteableDatabase(context);
 		int count = 0;
 		try {
 			db.beginTransaction();
 			ContentValues values = new ContentValues();
 			values.put(DOWNLOADED_SIZE, downloadedSize);
+            values.put(FILE, file);
 			count = db.update(TABLE_NAME, values, URL + " = ? AND " + THREAD_ID + " = ?",
                     new String [] {url, String.valueOf(threadId), });
 			db.setTransactionSuccessful();

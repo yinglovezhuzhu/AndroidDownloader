@@ -54,10 +54,11 @@ public class Downloader {
 	
 	private static final int RESPONSE_OK = 200;
 	private Context mContext;
-	private boolean isStoped; // The flag of stopped.
+	private boolean mStoped = true; // The flag of stopped.
 	private int mDownloadedSize = 0; // The size of downloaded.
 	private int mFileSize = 0; // The size of the file which to download.
 	private DownloadThread [] mTheadPool; // The thread pool of download thread.
+    private File mSaveFolder;
 	private File mSavedFile; // The local file.
 	private long mUpdateTime = 1000;
 	private Map<Integer, Integer> mData = new ConcurrentHashMap<Integer, Integer>(); // The data of all thread state
@@ -68,56 +69,20 @@ public class Downloader {
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @param downloadUrl The url of the file which to download.
 	 * @param saveFolder The local save folder.
 	 * @param threadNum The amount of thread to download a file.
 	 */
 	public Downloader(Context context, String downloadUrl, File saveFolder, int threadNum) {
-		try {
-			mContext = context;
-			mUrl = downloadUrl;
-			mTheadPool = new DownloadThread[threadNum];
+        this.mContext = context;
+        this.mUrl = downloadUrl;
+        this.mSaveFolder = saveFolder;
+        this.mTheadPool = new DownloadThread[threadNum];
 
-			checkDownloadFolder(saveFolder);
-			
-			HttpURLConnection conn = getConnection(downloadUrl);
-			
-			if (conn.getResponseCode() == RESPONSE_OK) {
-				mFileSize = conn.getContentLength();
-				// Throw a RuntimeException when got file size failed.
-				if (mFileSize <= 0) {
-					throw new RuntimeException("Can't get file size ");
-				}
-				
-				String filename = getFileName(conn);
-				// Create local file object according to local saved folder and local file name.
-				mSavedFile = new File(saveFolder, filename);
-				Map<Integer, Integer> logData = DownloadLogDBUtils.getLogByUrl(mContext, downloadUrl);
+        checkDownloadFolder(saveFolder);
+    }
 
-				if (logData.size() > 0) {
-					for (Map.Entry<Integer, Integer> entry : logData.entrySet()) {
-						mData.put(entry.getKey(), entry.getValue());
-					}
-				}
-
-				// If the number of threads that have been downloaded data and the number
-				// of threads is the same now set all the threads have calculated
-				// the total length of the downloaded data
-				mDownloadedSize = getDownloadedSize();
-				// Calculate the length of each thread need to download.
-				mBlockSize = getBlockSize(mFileSize, mTheadPool.length);
-			} else {
-				LogUtil.w(TAG, "Server response error! Response code：" + conn.getResponseCode()
-                        + "Response message：" + conn.getResponseMessage());
-				throw new RuntimeException("server response error ");
-			}
-		} catch (Exception e) {
-			LogUtil.e(TAG, e.toString());
-			throw new RuntimeException("Can't connection this url");
-		}
-	}
-	
 	/**
 	 * Download file
 	 * 
@@ -126,11 +91,60 @@ public class Downloader {
 	 * @throws Exception The error happened when downloading.
 	 */
 	public int download(DownloadListener listener) throws Exception {
+        mStoped = false;
+        HttpURLConnection conn = null;
+        try {
+            conn = getConnection(mUrl);
+
+            if (conn.getResponseCode() == RESPONSE_OK) {
+                mFileSize = conn.getContentLength();
+                // Throw a RuntimeException when got file size failed.
+                if (mFileSize <= 0) {
+                    throw new RuntimeException("Can't get file size ");
+                }
+
+                String filename = getFileName(conn);
+                // Create local file object according to local saved folder and local file name.
+                mSavedFile = new File(mSaveFolder, filename);
+                Map<Integer, Integer> logData = DownloadLogDBUtils.getLogByUrl(mContext, mUrl);
+
+                if (logData.size() > 0) {
+                    for (Map.Entry<Integer, Integer> entry : logData.entrySet()) {
+                        mData.put(entry.getKey(), entry.getValue());
+                    }
+                }
+
+                // If the number of threads that have been downloaded data and the number
+                // of threads is the same now set all the threads have calculated
+                // the total length of the downloaded data
+                mDownloadedSize = getDownloadedSize();
+                // Calculate the length of each thread need to download.
+                mBlockSize = getBlockSize(mFileSize, mTheadPool.length);
+            } else {
+                LogUtil.w(TAG, "Server response error! Response code：" + conn.getResponseCode()
+                        + "Response message：" + conn.getResponseMessage());
+                throw new RuntimeException("server response error ");
+            }
+        } catch (Exception e) {
+            LogUtil.e(TAG, e.toString());
+            throw new RuntimeException("Can't connection this url");
+        } finally {
+            if(null != conn) {
+                conn.disconnect();
+            }
+        }
+
+        if(null == mSavedFile) {
+            mStoped = true;
+            return -1;
+        }
+
         // Mark a downloading file name a suffix flag,
         // so as not to open the unfinished download files and error
-		File tempFile = new File(mSavedFile.getAbsolutePath() + TEMP_FILE_SUFFIX);
+        mSavedFile = new File(mSavedFile.getAbsolutePath() + TEMP_FILE_SUFFIX);
+
 		try {
-			RandomAccessFile randOut = new RandomAccessFile(tempFile, "rwd");
+			RandomAccessFile randOut = new RandomAccessFile(mSavedFile, "rwd");
 			if (mFileSize > 0) {
 				randOut.setLength(mFileSize); // Set total size of the download file.
 			}
@@ -146,7 +160,7 @@ public class Downloader {
 			for (int i = 0; i < mTheadPool.length; i++) {
 				int downloadedLength = mData.get(i + 1); // Get the size of downloaded from each thread.
 				if (downloadedLength < mBlockSize && mDownloadedSize < mFileSize) {// Go through when downloaded size less then total size.
-					mTheadPool[i] = new DownloadThread(this, url, tempFile, mBlockSize, mData.get(i + 1), i + 1); // Init the thread with the given id
+					mTheadPool[i] = new DownloadThread(this, url, mSavedFile, mBlockSize, mData.get(i + 1), i + 1); // Init the thread with the given id
 					mTheadPool[i].setPriority(7); // Set the priority of thread
 					                              // Thread.NORM_PRIORITY = 5
 					                              // Thread.MIN_PRIORITY = 1
@@ -155,21 +169,19 @@ public class Downloader {
 					mIsFinished = false;
 				} else {
 					mTheadPool[i] = null; // The thread is finished
-//					mIsFinished = true;
 				}
 			}
 			DownloadLogDBUtils.delete(mContext, mUrl); // delete all download log
-			DownloadLogDBUtils.save(mContext, mUrl, mData); // add new download log
+			DownloadLogDBUtils.save(mContext, mUrl, mSavedFile.getAbsolutePath(), mData); // add new download log
 
             boolean isDownloading = false;
             do {
-                Thread.sleep(mUpdateTime);
                 for (int i = 0; i < mTheadPool.length; i++) {
                     if (mTheadPool[i] != null && !mTheadPool[i].isFinished()) {// If has some thread not finished.
                         isDownloading = true;// Set is download state not finished.
                         mIsFinished = false;
                         if (mTheadPool[i].getDownloadedLength() == -1) {
-                            mTheadPool[i] = new DownloadThread(this, url, tempFile, mBlockSize, mData.get(i + 1), i + 1); // 重新开辟下载线程
+                            mTheadPool[i] = new DownloadThread(this, url, mSavedFile, mBlockSize, mData.get(i + 1), i + 1); // 重新开辟下载线程
                             mTheadPool[i].setPriority(7);
                             mTheadPool[i].start();
                         }
@@ -179,9 +191,16 @@ public class Downloader {
                     listener.onDownloadSize(mFileSize, mDownloadedSize);// download state call back
                                                                         // return then download size and downloaded size.
                 }
+                if(mFileSize == mDownloadedSize) {
+                    isDownloading = false;
+                } else {
+                    Thread.sleep(mUpdateTime);
+                }
             } while(isDownloading);
 			if (mDownloadedSize == mFileSize) {
-				tempFile.renameTo(mSavedFile);
+                String fineName = mSavedFile.getAbsolutePath();
+                fineName = fineName.substring(0, fineName.indexOf(TEMP_FILE_SUFFIX));
+                mSavedFile.renameTo(new File(fineName));
 				DownloadLogDBUtils.delete(mContext, mUrl);// Delete download log when finished download
 				mIsFinished = true;
 			}
@@ -212,15 +231,15 @@ public class Downloader {
 	 * Stop the download
 	 */
 	public void stop() {
-		this.isStoped = true;
+		this.mStoped = true;
 	}
 
 	/**
 	 * Get download state is stopped or not.
 	 * @return
 	 */
-	public boolean isStoped() {
-		return this.isStoped;
+	public boolean ismStoped() {
+		return this.mStoped;
 	}
 
 	/**
@@ -257,7 +276,7 @@ public class Downloader {
 	 */
 	protected synchronized void update(int threadId, int pos) {
 		mData.put(threadId, pos); // Update map data.
-		DownloadLogDBUtils.update(mContext, mUrl, threadId, pos); // Update database data.
+		DownloadLogDBUtils.update(mContext, mUrl, mSavedFile.getAbsolutePath(), threadId, pos); // Update database data.
 	}
 
 	/**

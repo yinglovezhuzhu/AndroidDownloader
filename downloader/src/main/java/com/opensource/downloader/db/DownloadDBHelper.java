@@ -67,10 +67,12 @@ public class DownloadDBHelper extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 		
 		//下载进度表，各个线程的进度
-		db.execSQL("CREATE TABLE IF NOT EXISTS download_log(_id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT, thread_id INTEGER, downloaded_size)");
+		db.execSQL("CREATE TABLE IF NOT EXISTS download_log(_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "url TEXT, thread_id INTEGER, downloaded_size INTEGER, file TEXT)");
 		
 		//下载历史
-		db.execSQL("CREATE TABLE IF NOT EXISTS download_history(_id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT, finish_time INTEGER)");
+		db.execSQL("CREATE TABLE IF NOT EXISTS download_history(_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "url TEXT, finish_time INTEGER, file TEXT)");
 		
 	}
 	

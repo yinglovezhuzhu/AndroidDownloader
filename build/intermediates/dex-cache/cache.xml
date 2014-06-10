@@ -2,17 +2,17 @@
 <pre-dex-items>
 
     <item
-        dex="/home/xiaoying/AndroidStudioProjects/AndroidDownloader/app/build/intermediates/pre-dexed/debug/classes-67544ec0f097b4da1b16b7d2ea9f9b12c8468f22.jar"
-        jar="/home/xiaoying/AndroidStudioProjects/AndroidDownloader/build/intermediates/exploded-aar/AndroidDownloader/downloader/unspecified/classes.jar"
-        jumboMode="false"
-        revision="19.1.0"
-        sha1="e395d7de2fb648a7b72e4d2a666f08cab37bd29c"/>
-    <item
         dex="/home/xiaoying/AndroidStudioProjects/AndroidDownloader/app/build/intermediates/pre-dexed/debug/classes-796c853fd748397610032e3168824dd522d1e20b.jar"
         jar="/home/xiaoying/AndroidStudioProjects/AndroidDownloader/build/intermediates/exploded-aar/com.android.support/appcompat-v7/19.0.0/classes.jar"
         jumboMode="false"
         revision="19.1.0"
         sha1="eb69b5c2e53e59d82f7439f3217f46f9d98f0c89"/>
+    <item
+        dex="/home/xiaoying/AndroidStudioProjects/AndroidDownloader/app/build/intermediates/pre-dexed/debug/classes-67544ec0f097b4da1b16b7d2ea9f9b12c8468f22.jar"
+        jar="/home/xiaoying/AndroidStudioProjects/AndroidDownloader/build/intermediates/exploded-aar/AndroidDownloader/downloader/unspecified/classes.jar"
+        jumboMode="false"
+        revision="19.1.0"
+        sha1="46231ab141e75c73d20d64c3f258b145f763f142"/>
     <item
         dex="/home/xiaoying/AndroidStudioProjects/AndroidDownloader/app/build/intermediates/pre-dexed/debug/support-v4-19.0.0-3066ee1b3f64fc6a1a78a74e59b094eae6da3b0f.jar"
         jar="/home/xiaoying/Android/android-sdk-linux/extras/android/m2repository/com/android/support/support-v4/19.0.0/support-v4-19.0.0.jar"

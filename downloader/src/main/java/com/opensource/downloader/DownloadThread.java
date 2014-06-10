@@ -75,7 +75,7 @@ public class DownloadThread extends Thread {
 		if (mDownloadedSize < mBlockSize) {// If this thread are not finished.
 			try {
 				HttpURLConnection conn = (HttpURLConnection) mUrl.openConnection();
-				conn.setConnectTimeout(5 * 1000);
+				conn.setConnectTimeout(6 * 1000);
 				conn.setRequestMethod("GET");
 				conn.setRequestProperty("Accept", "*/*"); // accept all MIME-TYPE
 				conn.setRequestProperty("Accept-Language", "zh-CN");
@@ -91,7 +91,7 @@ public class DownloadThread extends Thread {
                 // if the size set to be is lager then realistic size.
 				conn.setRequestProperty("Range", "bytes=" + startPos + "-" + endPos);
 
-				// 客户端用户代理
+				// Client agent
 				conn.setRequestProperty("User-Agent",
 						"Mozilla/4.0 (compatible; MSIE 8.0;"
 								+ " Windows NT 5.2; Trident/4.0;"
@@ -113,7 +113,7 @@ public class DownloadThread extends Thread {
 				// Make the pointer point to the position where start to download.
 				threadFile.seek(startPos);
                 // The data is written to file until user stop download or data is finished download.
-				while (!mDownloader.isStoped() && (offset = inStream.read(buffer)) != -1) {
+				while (!mDownloader.ismStoped() && (offset = inStream.read(buffer)) != -1) {
 					threadFile.write(buffer, 0, offset);
 					mDownloadedSize += offset;
 					// Update the range of this thread to database.
@@ -124,7 +124,7 @@ public class DownloadThread extends Thread {
 				threadFile.close();
 				inStream.close();
 
-				if (mDownloader.isStoped()) {
+				if (mDownloader.ismStoped()) {
 					LogUtil.i(TAG, "Download thread " + mThreadId + " has been paused");
 				} else {
 					LogUtil.i(TAG, "Download thread " + mThreadId + " has been finished");

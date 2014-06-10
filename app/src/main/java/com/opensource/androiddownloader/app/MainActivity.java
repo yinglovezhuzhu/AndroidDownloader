@@ -71,9 +71,7 @@ public class MainActivity extends Activity {
     }
 
     private void download() {
-        if(mDownloadTask == null) {
-            mDownloadTask = new DownloadTask();
-        }
+        mDownloadTask = new DownloadTask();
         mDownloadTask.execute("http://www.gzevergrandefc.com/UploadFile/photos/2013-06/fbb77294-6041-41ac-befa-37e237bd41f2.jpg", MainApplication.APP_ROOT);
     }
 
@@ -118,6 +116,7 @@ public class MainActivity extends Activity {
         public void pause() {
             if(mmDownloader != null) {
                 mmDownloader.stop();
+                mIsPause = true;
                 cancel(true);
             }
         }
@@ -131,6 +130,7 @@ public class MainActivity extends Activity {
                 mPb.setProgress(0);
                 mBtn.setText(R.string.start);
                 mTvMsg.setText("");
+                mIsPause = true;
             }
         }
 
