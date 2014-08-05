@@ -252,7 +252,7 @@ public abstract class AsyncDBTask<Params, Progress, Result> {
      * @see #onPostExecute
      * @see #publishProgress
      */
-    protected abstract Result doInBackground(@SuppressWarnings("unchecked") Params... params);
+    protected abstract Result doInBackground(Params... params);
 
     /**
      * Runs on the UI thread before {@link #doInBackground}.
@@ -285,7 +285,7 @@ public abstract class AsyncDBTask<Params, Progress, Result> {
      * @see #publishProgress
      * @see #doInBackground
      */
-    protected void onProgressUpdate(@SuppressWarnings("unchecked") Progress... values) {
+    protected void onProgressUpdate(Progress... values) {
     }
 
     /**
@@ -383,7 +383,7 @@ public abstract class AsyncDBTask<Params, Progress, Result> {
      *         {@link com.opensource.downloader.utils.AsyncDBTask.Status#RUNNING} or {@link com.opensource.downloader.utils.AsyncDBTask.Status#FINISHED}.
      */
     @SuppressWarnings("incomplete-switch")
-	public final AsyncDBTask<Params, Progress, Result> execute(@SuppressWarnings("unchecked") Params... params) {
+	public final AsyncDBTask<Params, Progress, Result> execute(Params... params) {
         if (mStatus != Status.PENDING) {
             switch (mStatus) {
                 case RUNNING:
@@ -417,7 +417,7 @@ public abstract class AsyncDBTask<Params, Progress, Result> {
      * @see #onProgressUpdate
      * @see #doInBackground
      */
-    protected final void publishProgress(@SuppressWarnings("unchecked") Progress... values) {
+    protected final void publishProgress(Progress... values) {
         sHandler.obtainMessage(MESSAGE_POST_PROGRESS,
                 new AsyncTaskExResult<Progress>(this, values)).sendToTarget();
     }
@@ -456,7 +456,7 @@ public abstract class AsyncDBTask<Params, Progress, Result> {
 		final AsyncDBTask mTask;
         final Data[] mData;
 
-        AsyncTaskExResult(AsyncDBTask task, @SuppressWarnings("unchecked") Data... data) {
+        AsyncTaskExResult(AsyncDBTask task, Data... data) {
             mTask = task;
             mData = data;
         }

@@ -107,13 +107,13 @@ public class MainActivity extends Activity {
 
         @Override
         protected String doInBackground(String... params) {
-            mmDownloader = new Downloader(MainActivity.this, params[0], new File(params[1]), 4);
-            DownloadListener downloadListener = new DownloadListener() {
-                @Override
-                public void onDownloadSize(int totalSize, int downloadedSize) {
-                    publishProgress(totalSize, downloadedSize);
-                }
-            };
+        	mmDownloader = new Downloader(MainActivity.this, params[0], new File(params[1]), 4, true);
+        	DownloadListener downloadListener = new DownloadListener() {
+        		@Override
+        		public void onDownloadSize(int totalSize, int downloadedSize) {
+        			publishProgress(totalSize, downloadedSize);
+        		}
+        	};
             try {
                 mmDownloader.download(downloadListener);
                 return "下载成功";

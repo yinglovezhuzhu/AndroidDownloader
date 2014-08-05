@@ -46,7 +46,7 @@ public class DownloadThread extends Thread {
 	private int mDownloadedSize;
 	private int mThreadId = -1;
 
-	private boolean mIsFinished = false;
+	private boolean mFinished = false;
 
 	/**
 	 * 构造方法
@@ -126,7 +126,7 @@ public class DownloadThread extends Thread {
 				} else {
 					LogUtil.i(TAG, "Download thread " + mThreadId + " has been finished");
 				}
-				this.mIsFinished = true; // 设置完成标志为true，无论是下载完成还是用户主动中断下载
+				this.mFinished = true; // 设置完成标志为true，无论是下载完成还是用户主动中断下载
 			} catch (Exception e) {
 				// Set downloaded size to -1.
 				this.mDownloadedSize = -1;
@@ -141,7 +141,7 @@ public class DownloadThread extends Thread {
 	 * @return true if this thread is finished.
 	 */
 	public boolean isFinished() {
-		return mIsFinished;
+		return mFinished;
 	}
 
 	/**

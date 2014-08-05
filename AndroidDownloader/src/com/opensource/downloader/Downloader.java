@@ -62,14 +62,16 @@ public class Downloader {
 	private int mBlockSize; // The block size of each thread need to download
 	private String mUrl; // The url of the file which to download.
 	
-	private boolean mIsFinished = false;
+	private boolean mFinished = false;
+	
+	private boolean mBreakPointSupported = true;
 
 	/**
-	 * Constructor
-	 *
-	 * @param downloadUrl The url of the file which to download.
-	 * @param saveFolder The local save folder.
-	 * @param threadNum The amount of thread to download a file.
+	 * Constructor<br><br>
+	 * @param context
+	 * @param downloadUrl
+	 * @param saveFolder
+	 * @param threadNum
 	 */
 	public Downloader(Context context, String downloadUrl, File saveFolder, int threadNum) {
         this.mContext = context;
@@ -79,6 +81,19 @@ public class Downloader {
 
         checkDownloadFolder(saveFolder);
     }
+	
+	/**
+	 * Constructor<br><br>
+	 * @param context
+	 * @param downloadUrl
+	 * @param saveFolder
+	 * @param threadNum
+	 * @param breakPointSupported Is break point supporeted, If this value is true, it would save the download log into database.
+	 */
+	public Downloader(Context context, String downloadUrl, File saveFolder, int threadNum, boolean breakPointSupported) {
+		this(context, downloadUrl, saveFolder, threadNum);
+		this.mBreakPointSupported = breakPointSupported;
+	}
 
 	/**
 	 * Download file
@@ -103,12 +118,14 @@ public class Downloader {
                 String filename = getFileName(conn);
                 // Create local file object according to local saved folder and local file name.
                 mSavedFile = new File(mSaveFolder, filename);
-                Map<Integer, Integer> logData = DownloadLogDBUtils.getLogByUrl(mContext, mUrl);
-
-                if (logData.size() > 0) {
-                    for (Map.Entry<Integer, Integer> entry : logData.entrySet()) {
-                        mData.put(entry.getKey(), entry.getValue());
-                    }
+                
+                if(mBreakPointSupported) {
+                	Map<Integer, Integer> logData = DownloadLogDBUtils.getLogByUrl(mContext, mUrl);
+                	if (!logData.isEmpty()) {
+                		for (Map.Entry<Integer, Integer> entry : logData.entrySet()) {
+                			mData.put(entry.getKey(), entry.getValue());
+                		}
+                	}
                 }
 
                 // If the number of threads that have been downloaded data and the number
@@ -120,11 +137,11 @@ public class Downloader {
             } else {
                 LogUtil.w(TAG, "Server response error! Response code：" + conn.getResponseCode()
                         + "Response message：" + conn.getResponseMessage());
-                throw new RuntimeException("server response error ");
+                throw new RuntimeException("server response error, response code:" + conn.getResponseCode());
             }
         } catch (Exception e) {
             LogUtil.e(TAG, e.toString());
-            throw new RuntimeException("Can't connection this url");
+            throw new RuntimeException("Failed to connect the url:" + mUrl, e);
         } finally {
             if(null != conn) {
                 conn.disconnect();
@@ -163,20 +180,24 @@ public class Downloader {
 					                              // Thread.MIN_PRIORITY = 1
 					                              // Thread.MAX_PRIORITY = 10
 					mTheadPool[i].start(); // Start thread
-					mIsFinished = false;
+					mFinished = false;
 				} else {
 					mTheadPool[i] = null; // The thread is finished
 				}
 			}
-			DownloadLogDBUtils.delete(mContext, mUrl); // delete all download log
-			DownloadLogDBUtils.save(mContext, mUrl, mSavedFile.getAbsolutePath(), mData); // add new download log
+			
+			if(mBreakPointSupported) {
+				DownloadLogDBUtils.delete(mContext, mUrl); // delete all download log
+				DownloadLogDBUtils.save(mContext, mUrl, mSavedFile.getAbsolutePath(), mData); // add new download log
+			}
 
             boolean isDownloading = false;
             do {
+            	isDownloading = false;
                 for (int i = 0; i < mTheadPool.length; i++) {
                     if (mTheadPool[i] != null && !mTheadPool[i].isFinished()) {// If has some thread not finished.
                         isDownloading = true;// Set is download state not finished.
-                        mIsFinished = false;
+                        mFinished = false;
                         if (mTheadPool[i].getDownloadedLength() == -1) {
                             mTheadPool[i] = new DownloadThread(this, url, mSavedFile, mBlockSize, mData.get(i + 1), i + 1); // 重新开辟下载线程
                             mTheadPool[i].setPriority(7);
@@ -191,19 +212,25 @@ public class Downloader {
                 if(mFileSize == mDownloadedSize) {
                     isDownloading = false;
                 } else {
-                    Thread.sleep(mUpdateTime);
+                	try {
+                		Thread.sleep(mUpdateTime);
+                	} catch (InterruptedException e) {
+                		isDownloading = false;
+                	}
                 }
             } while(isDownloading);
 			if (mDownloadedSize == mFileSize) {
                 String fineName = mSavedFile.getAbsolutePath();
                 fineName = fineName.substring(0, fineName.indexOf(TEMP_FILE_SUFFIX));
                 mSavedFile.renameTo(new File(fineName));
-				DownloadLogDBUtils.delete(mContext, mUrl);// Delete download log when finished download
-				mIsFinished = true;
+                if(mBreakPointSupported) {
+                	DownloadLogDBUtils.delete(mContext, mUrl);// Delete download log when finished download
+                }
+				mFinished = true;
 			}
 		} catch (Exception e) {
 			LogUtil.e(TAG, e.toString());// 打印错误
-			throw new Exception("File downloads error"); // Throw exception when some error happened when downloading.
+			throw new Exception("Exception occured when downloading file\n", e);// Throw exception when some error happened when downloading.
 		}
 		return mDownloadedSize;
 	}
@@ -214,7 +241,7 @@ public class Downloader {
 	 * @return
 	 */
 	public boolean isFinished() {
-		return mIsFinished;
+		return mFinished;
 	}
 
 	/**
@@ -227,7 +254,7 @@ public class Downloader {
 	/**
 	 * Stop the download
 	 */
-	public void stop() {
+	public synchronized void stop() {
 		this.mStoped = true;
 	}
 
@@ -235,7 +262,7 @@ public class Downloader {
 	 * Get download state is stopped or not.
 	 * @return
 	 */
-	public boolean ismStoped() {
+	public synchronized boolean ismStoped() {
 		return this.mStoped;
 	}
 
@@ -273,7 +300,9 @@ public class Downloader {
 	 */
 	protected synchronized void update(int threadId, int pos) {
 		mData.put(threadId, pos); // Update map data.
-		DownloadLogDBUtils.update(mContext, mUrl, mSavedFile.getAbsolutePath(), threadId, pos); // Update database data.
+		if(mBreakPointSupported) {
+			DownloadLogDBUtils.update(mContext, mUrl, mSavedFile.getAbsolutePath(), threadId, pos); // Update database data.
+		}
 	}
 
 	/**
