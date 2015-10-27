@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="D:\Android\sdk\extras\android\m2repository\com\android\support\support-v4\19.1.0\support-v4-19.1.0.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="85f201b380937e61a9dce6ca90ccf6872abbfb67">
+        <dex dex="E:\AndroidStudioProjects\AndroidDownloader\app\build\intermediates\pre-dexed\debug\support-v4-19.1.0-73b9883bfda7e9a6ae205d0e99c174e73ba72aaa.jar" />
+    </item>
+    <item
+        jar="E:\AndroidStudioProjects\AndroidDownloader\app\build\intermediates\exploded-aar\AndroidDownloader\downloader\unspecified\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="29b1ca9e42a20434351bd341e2aaadbad16df8a7">
+        <dex dex="E:\AndroidStudioProjects\AndroidDownloader\app\build\intermediates\pre-dexed\debug\classes-f09f12151cf17c4629aacfb1bbecf7dfd1695c24.jar" />
+    </item>
+
+</items>

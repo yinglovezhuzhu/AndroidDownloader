@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.opensource.downloader.demo.test">
+
+    <uses-sdk android:minSdkVersion="7" android:targetSdkVersion="19" />
+
+    <application>
+        <uses-library android:name="android.test.runner" />
+    </application>
+
+    <instrumentation android:name="android.test.InstrumentationTestRunner"
+                     android:targetPackage="com.opensource.downloader.demo"
+                     android:handleProfiling="false"
+                     android:functionalTest="false"
+                     android:label="Tests for com.opensource.downloader.demo"/>
+</manifest>
